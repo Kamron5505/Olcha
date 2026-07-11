@@ -3,13 +3,10 @@ import { useCartContext } from '../context/CartContext';
 import { useLang } from '../context/LangContext';
 import { useState } from 'react';
 import ProductModal from './ProductModal';
-import ProductModalSimple from './ProductModalSimple';
 
 function formatPrice(price) {
-  console.log('formatPrice input:', price, 'type:', typeof price);
-  
   if (price === undefined || price === null) return '0';
-  
+
   // Пробуем преобразовать в число разными способами
   let num;
   if (typeof price === 'string') {
@@ -19,12 +16,9 @@ function formatPrice(price) {
   } else {
     num = Number(price);
   }
-  
-  if (isNaN(num)) {
-    console.warn('Cannot parse price:', price);
-    return '0';
-  }
-  
+
+  if (isNaN(num)) return '0';
+
   return num.toLocaleString('ru-RU');
 }
 
@@ -33,17 +27,6 @@ export default function ProductCard({ product }) {
   const { t } = useLang();
   const inCart = isInCart(product.id);
   const [showModal, setShowModal] = useState(false);
-
-  // Отладка данных товара
-  console.log('ProductCard data:', {
-    id: product.id,
-    name: product.name,
-    price: product.price,
-    min_price: product.min_price,
-    image: product.image,
-    images: product.images,
-    hasModal: !!ProductModal
-  });
 
   const image =
     product.image ||
@@ -60,7 +43,7 @@ export default function ProductCard({ product }) {
 
   return (
     <>
-      <div className="product-card bg-white rounded-xl border border-gray-100 overflow-hidden flex flex-col h-full">
+      <div className="product-card bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col h-full">
         <div className="relative overflow-hidden group">
           <Link to={`/product/${product.id}`} className="block">
             <div className="aspect-square bg-gray-50 flex items-center justify-center p-4">
@@ -70,35 +53,39 @@ export default function ProductCard({ product }) {
                 loading="lazy"
                 className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                 onError={(e) => {
-                  console.log('Image error for product:', product.id, 'src:', e.target.src);
                   e.target.src = `https://via.placeholder.com/300x300/f3f4f6/9ca3af?text=No+Image`;
                   e.target.onerror = null; // Prevent infinite loop
                 }}
               />
             </div>
           </Link>
-          
-          {/* Quick view button - УПРОЩЕННАЯ ВЕРСИЯ ДЛЯ ТЕСТА */}
+
+          {/* Badges — stacked top-left so they never overlap */}
+          <div className="absolute top-2.5 left-2.5 flex flex-col items-start gap-1.5 z-10">
+            {discount && discount > 0 && (
+              <span className="bg-red-600 text-white text-[11px] font-bold px-2 py-0.5 rounded-md shadow-sm tabular-nums">
+                −{discount}%
+              </span>
+            )}
+            {product.is_new && (
+              <span className="bg-emerald-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-md shadow-sm">
+                NEW
+              </span>
+            )}
+          </div>
+
+          {/* Quick view — subtle icon, reveals on hover */}
           <button
-            onClick={() => {
-              console.log('Quick view clicked for product:', product.id);
-              setShowModal(true);
-            }}
-            className="absolute top-2 left-2 bg-red-600 hover:bg-red-700 text-white text-xs font-medium px-2 py-1 rounded-full shadow-sm z-10"
+            onClick={() => setShowModal(true)}
+            aria-label="Быстрый просмотр"
+            title="Быстрый просмотр"
+            className="absolute top-2.5 right-2.5 w-9 h-9 flex items-center justify-center bg-white/90 backdrop-blur text-gray-600 hover:text-red-600 rounded-full shadow-sm ring-1 ring-black/5 opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 active:scale-95 z-10"
           >
-            👁️ Быстрый просмотр
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
           </button>
-          
-          {discount && discount > 0 && (
-            <span className="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-              -{discount}%
-            </span>
-          )}
-          {product.is_new && (
-            <span className="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-              NEW
-            </span>
-          )}
         </div>
 
         <div className="p-3 flex flex-col flex-1">
@@ -110,11 +97,11 @@ export default function ProductCard({ product }) {
 
           <div className="mt-auto">
             <div className="flex items-baseline gap-2 mb-2">
-              <span className="text-base font-bold text-gray-900">
+              <span className="text-base font-extrabold text-gray-900 tabular-nums">
                 {formatPrice(price)} {t('sum')}
               </span>
               {oldPrice && oldPrice > price && (
-                <span className="text-xs text-gray-400 line-through">
+                <span className="text-xs text-gray-400 line-through tabular-nums">
                   {formatPrice(oldPrice)}
                 </span>
               )}
@@ -151,7 +138,7 @@ export default function ProductCard({ product }) {
       </div>
       
       {showModal && (
-        <ProductModalSimple
+        <ProductModal
           productId={product.id}
           isOpen={showModal}
           onClose={() => setShowModal(false)}
